@@ -1,0 +1,20 @@
+grammar FSM extends de.monticore.literals.MCCommonLiterals {
+
+    //Explicitely choose starting rule
+    start FSM;
+
+    FSM = 
+        "FSM" Name "{"
+			"states" "{" State* "}" 
+       		"initial state" "{" initialState:Name@State ";" "}"
+        	"final states" "{" (finalStates:Name@State ";")+ "}"
+        "}";
+
+    symbol State = 
+        "state" Name "{" Transition* "}";
+
+    Transition =
+        "Transition to" Name@State ":"
+        "input =" input:StringLiteral
+        "output =" output:StringLiteral ";";
+}

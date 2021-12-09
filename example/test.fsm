@@ -1,0 +1,32 @@
+FSM Test {
+
+	states {
+	
+		state A {
+			Transition to A :
+			input = "1"
+			output = "A to A";
+			
+			Transition to B :
+			input = "2"
+			output = "A to B";
+		}
+		
+		state B {
+			Transition to B :
+			input = "1"
+			output = "B to B";
+		}
+	
+	}
+
+	initial state {
+		A;
+	}
+	
+	final states {
+		B;
+	}
+	
+	
+}

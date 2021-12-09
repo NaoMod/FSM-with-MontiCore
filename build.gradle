@@ -1,0 +1,111 @@
+/* (c) https://github.com/MontiCore/monticore */
+import de.monticore.MCTask
+
+plugins {
+    id "java"
+    id "monticore"  version "$mc_version" // MontiCore Plugin
+    id "maven-publish"
+    id "com.github.johnrengelman.shadow" version "6.0.0"
+    // useful reports
+    // todo: reactivate this plugin when new version compatible to gradle 6.0.1 is available
+//    id 'cz.malohlava.visteg' version '1.0.5'
+    id 'jacoco'
+}
+
+
+def guava_version = '30.0-jre'
+def findbugs_version = '3.0.0'
+def antlr_version = '4.7.1'
+def junit_version = '4.13.1'
+
+def grammarDir = "$projectDir/grammars"
+
+group = "naomod"
+version = '1.0.0-SNAPSHOT'
+description = "FSM DSL"
+sourceCompatibility = "1.8"
+
+// configure non-standard source sets
+sourceSets {
+  main.java.srcDirs += [ "$projectDir/src"]
+}
+buildDir = file("$projectDir/target")
+
+
+dependencies {
+  implementation "de.monticore:monticore-runtime:$mc_version"
+  implementation "de.monticore:monticore-grammar:$mc_version"
+  grammar ("de.monticore:monticore-grammar:$mc_version"){ capabilities {
+            requireCapability("de.monticore:monticore-grammar-grammars")}
+          }
+  implementation "de.se_rwth.commons:se-commons-logging:$se_commons_version"
+  implementation "de.se_rwth.commons:se-commons-utilities:$se_commons_version"
+  implementation group:'com.google.guava', name:'guava', version:guava_version
+  implementation group:'org.antlr', name:'antlr4-runtime', version:antlr_version
+  testImplementation "de.monticore:monticore-generator:$mc_version"
+  testImplementation group:'junit', name:'junit', version:junit_version
+  testImplementation ("de.monticore:monticore-runtime:$mc_version"){ capabilities {
+    requireCapability("de.monticore:monticore-runtime-tests")}
+  }
+}
+
+// has to be placed directly under the dependency definition, since otherwise the grammar configurations are not found
+repositories {
+    if(("true").equals(getProperty('useLocalRepo'))){
+        mavenLocal()
+    }
+    maven {
+        credentials.username mavenUser
+        credentials.password mavenPassword
+        url repo
+    }
+}
+
+task  generateFSMsources(type: MCTask) {
+  grammar = file "$grammarDir/FSM.mc4"
+  outputDir = file "$buildDir/generated-sources/monticore/sourcecode"
+  def uptoDate = incCheck("FSM.mc4")
+  outputs.upToDateWhen { uptoDate }
+}
+
+java {
+  withSourcesJar()
+  withJavadocJar()
+}
+
+sourcesJar.dependsOn project.collect { it.tasks.withType(MCTask)}
+
+// generated java doc contains errors, disable for now
+javadoc.failOnError(false)
+
+shadowJar { // all in one jar
+    manifest {
+        attributes "Main-Class": "fsm.FSMCLI"
+    }
+    archiveClassifier =  "cli"
+}
+
+// build grammar jar as well
+task grammarJar(type: Jar) {
+    from ("$projectDir/$grammarDir"){ include "**/*.mc4" }
+    archiveClassifier = "grammars"
+}
+
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+
+task buildAll(type: GradleBuild) {
+  tasks = [ 'build' ]
+}
+
+task run(type: JavaExec) {
+	description = "Run the interpreter on an FSM"
+	main = 'fsm.FSMCLI'
+	classpath = sourceSets.main.runtimeClasspath
+	standardInput = System.in
+}
+
+defaultTasks 'build'
