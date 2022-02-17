@@ -7,6 +7,8 @@ import fsm._ast.ASTState;
  */
 public class Context {
 	private ASTState currentState;
+	private String currentInput;
+	private StepResult lastStepResult;
 
 	public Context(ASTState initialState) {
 		currentState = initialState;
@@ -18,5 +20,21 @@ public class Context {
 
 	public void setCurrentState(ASTState currentState) {
 		this.currentState = currentState;
+	}
+
+	public String getCurrentInput() {
+		return currentInput;
+	}
+
+	public void setCurrentInput(String currentInput) {
+		this.currentInput = currentInput;
+	}
+
+	public StepResult getLastStepResult() {
+		return lastStepResult;
+	}
+
+	public void setLastStepResult(StepResult lastStepResult) {
+		this.lastStepResult = lastStepResult;
 	}
 }

@@ -6,7 +6,10 @@ import java.util.Scanner;
 
 import fsm._ast.ASTFSM;
 import fsm._ast.ASTState;
-import fsm._ast.ASTTransition;
+import fsm._visitor.FSMTraverser;
+import fsm._visitor.FSMTraverserImplementation;
+import fsm._visitor.hwc.FSMBasicVisitor;
+import fsm._visitor.hwc.FSMHandlerWithContext;
 
 /**
  * Takes an FSM complying to the grammar described in FSM.mc4 and allows the user
@@ -25,28 +28,35 @@ public class Interpreter {
 	 * Launches the interpreter.
 	 */
 	public void interpret() {
+		FSMTraverser traverser = new FSMTraverserImplementation();
+		traverser.setFSMHandler(new FSMHandlerWithContext(context));
+		traverser.add4FSM(new FSMBasicVisitor(context));
+
 		Scanner scanner = new Scanner(System.in);
 		String input = readInput(scanner);
+		context.setCurrentInput(input);
 		
 		while (!input.isEmpty()) {
-			ASTTransition candidateTransition = context.getCurrentState().findOutgoingTransitionWithInput(input);
-			if (candidateTransition == null) {
-				System.out.println("No transition with input " + input + " from the current state.");
-				System.out.println("Execution failed !");
+			traverser.handle(context.getCurrentState());
+			StepResult stepResult = context.getLastStepResult();
+
+			if (!stepResult.isPossible()) {
+				System.out.println("Execution failed ! No transition with input " + input + " from the current state.");
 				return;
 			}
 			
-			context.setCurrentState(candidateTransition.getNameDefinition());
-			System.out.println("Output : " + candidateTransition.getOutput().getValue());			
+			context.setCurrentState(stepResult.getCurrentState());
+			System.out.println("Output : " + stepResult.getOutput());			
 			System.out.println("-------");
 			
 			input = readInput(scanner);
+			context.setCurrentInput(input);
 		}
 		
 		if (checkFinalState(context.getCurrentState())) {
 			System.out.println("Execution successful !");
 		} else {
-			System.out.println("Execution failed !");
+			System.out.println("Execution failed ! The current state is not final.");
 		}
 		
 		scanner.close();
